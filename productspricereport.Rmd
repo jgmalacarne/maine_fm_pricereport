@@ -1,0 +1,62 @@
+---
+title: "Maine Farmers Market Price Report - Product Details"
+output: html_document
+params: 
+    marketselect: NA
+    daterange: NA
+    prices: NA
+    productlist: NA
+    datause: NA
+    empty: NA
+---
+
+```{r,include=FALSE}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbPaletteL <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7","#808080","#E69F0050", "#56B4E950", "#009E7350", "#F0E44250", "#0072B250", "#D55E0050")
+cbPalettet <- c("#99999950", "#E69F0050", "#56B4E950", "#009E7350", "#F0E44250", "#0072B250", "#D55E0050", "#CC79A750")
+linetypelist <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
+
+
+whatprices <- if(params$prices == 0){"both Organic and Conventional prices"} else {"only Organic prices" }
+whichmarkets <- if(params$marketselect == "All"){"all three regions"} else {params$marketselect}
+whichweek <- params$week
+minweek <- min(params$daterange)
+maxweek <- max(params$daterange)
+```
+
+# This report was generated on `r Sys.Date()`. 
+
+# It includes data from `r whichmarkets` including `r whatprices` for the period between `r minweek` and `r maxweek`.  
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+  # Set up data
+producttimedata <- params$datause %>% 
+      filter(marketregion == params$marketselect | mr2 == params$marketselect) %>% 
+      filter(weekdate >= min(params$daterange) & weekdate <= max(params$daterange)) %>%   
+      filter(organic >= as.numeric(params$prices)) %>% 
+      filter(Product %in% params$productlist) %>% 
+      group_by(Product,`Week Starting`) %>% 
+      summarize(`Average Price` = round(mean(price),2),
+                `Minimum` = round(min(price),2),
+                `Maximum` = round(max(price),2),
+                `Number Reporting` = n())   
+
+  # Make Plot
+  producttimeplot <- producttimedata %>% 
+       ggplot(aes(x=`Week Starting`,y=`Average Price`,color = Product,linetype=Product)) + geom_line(size=1.5) + geom_point()+
+       scale_color_manual(values=cbPalette,name="Product") + scale_linetype_manual(values=linetypelist,name="Product") +
+      scale_x_date(date_breaks = "1 week", date_labels = "%d-%b")
+  producttimeplot
+
+  # Make Table
+    producttimetable <- producttimedata %>% 
+      knitr::kable("html") %>%
+      kable_styling("striped", full_width = F)
+    producttimetable
+```
+
+---
+
+This report is made possible with funding through the Maine Department of Agriculture, Conservation, and Forestry and the support of the Maine Federation of Farmers Markets, Maine Organic Farmers and Gardeners Association, Maine Farmland Trust, and the University of Maine.
+
+

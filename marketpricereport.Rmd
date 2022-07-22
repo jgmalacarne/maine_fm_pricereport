@@ -1,0 +1,61 @@
+---
+title: "Maine Farmers Market Price Report - Market Summary"
+output: html_document
+date: "`r Sys.Date()`"
+params: 
+    marketselect: NA
+    week: NA
+    prices: NA
+    markets: NA
+    datause: NA
+    mainemap: NA
+    empty: NA
+---
+
+```{r, include = FALSE}
+whatprices <- if(params$prices == 0){"both Organic and Conventional prices"} else {"only Organic prices" }
+whichmarkets <- if(params$marketselect == "All"){"all three regions"} else {params$marketselect}
+whichweek <- params$week
+```
+
+# This report was generated on `r Sys.Date()`. 
+
+# It includes data from `r whichmarkets` including `r whatprices` for the week beginning `r whichweek`.  
+
+```{r,echo = FALSE,message=FALSE,warning=FALSE}
+  marketplotdata <- params$markets %>% filter(marketregion == params$marketselect | mr2 == params$marketselect)
+    
+  # Make Map
+  marketplot <- ggplot(params$mainemap, aes(x = long, y = lat)) +
+     geom_polygon(aes(group = group),fill = "white",colour="black") + 
+      geom_point(data = marketplotdata, aes(x = lon, y = lat), size=4, color = marketplotdata$regioncol) + coord_fixed(1.3) + params$empty +
+      geom_label_repel(data = marketplotdata, aes(x = lon, y = lat,label = marketlab), box.padding   = 0.35, point.padding = 0.5, segment.color = 'grey50')
+  marketplot
+```
+
+
+```{r, echo = FALSE}
+  # Set up data
+  reporttabledata  <- params$datause %>% 
+                          filter(marketregion == params$marketselect | mr2 == params$marketselect) %>% 
+                          filter(weekdate == params$week) %>%   
+                          filter(organic >= as.numeric(params$prices)) 
+
+  # Make Table
+  reporttable <- reporttabledata %>% 
+    group_by(Product) %>% 
+    summarize(`Average Price` = round(mean(price),2),
+              `Minimum` = round(min(price),2),
+              `Maximum` = round(max(price),2),
+              `Number Reporting` = n()) %>% 
+    knitr::kable("html") %>%
+    kable_styling("striped", full_width = F) 
+    reporttable
+```
+
+---
+
+This report is made possible with funding through the Maine Department of Agriculture, Conservation, and Forestry and the support of the Maine Federation of Farmers Markets, Maine Organic Farmers and Gardeners Association, Maine Farmland Trust, and the University of Maine.
+
+
+
